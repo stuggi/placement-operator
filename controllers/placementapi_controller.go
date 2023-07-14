@@ -97,6 +97,7 @@ type PlacementAPIReconciler struct {
 // +kubebuilder:rbac:groups=batch,resources=jobs,verbs=get;list;watch;create;update;patch;delete;
 // +kubebuilder:rbac:groups=apps,resources=deployments,verbs=get;list;watch;create;update;patch;delete;
 // +kubebuilder:rbac:groups=route.openshift.io,resources=routes,verbs=get;list;watch;create;update;patch;delete;
+// +kubebuilder:rbac:groups=route.openshift.io,resources=routes/custom-host,verbs=get;list;watch;create;update;patch;delete;
 // +kubebuilder:rbac:groups=mariadb.openstack.org,resources=mariadbdatabases,verbs=get;list;watch;create;update;patch;delete;
 // +kubebuilder:rbac:groups=keystone.openstack.org,resources=keystoneapis,verbs=get;list;watch;
 // +kubebuilder:rbac:groups=keystone.openstack.org,resources=keystoneservices,verbs=get;list;watch;create;update;patch;delete;
@@ -371,7 +372,10 @@ func (r *PlacementAPIReconciler) reconcileInit(
 	// expose the service (create service, route and return the created endpoint URLs)
 	//
 	var ports = map[endpoint.Endpoint]endpoint.Data{
-		endpoint.EndpointPublic:   {Port: placement.PlacementPublicPort},
+		endpoint.EndpointPublic: {
+			Port:          placement.PlacementPublicPort,
+			RouteOverride: instance.Spec.Override.Route,
+		},
 		endpoint.EndpointInternal: {Port: placement.PlacementInternalPort},
 	}
 

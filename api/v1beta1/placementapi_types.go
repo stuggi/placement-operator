@@ -19,6 +19,7 @@ package v1beta1
 import (
 	condition "github.com/openstack-k8s-operators/lib-common/modules/common/condition"
 	endpoint "github.com/openstack-k8s-operators/lib-common/modules/common/endpoint"
+	"github.com/openstack-k8s-operators/lib-common/modules/common/route"
 	"github.com/openstack-k8s-operators/lib-common/modules/common/util"
 
 	corev1 "k8s.io/api/core/v1"
@@ -115,6 +116,16 @@ type PlacementAPISpec struct {
 	// +kubebuilder:validation:Optional
 	// ExternalEndpoints, expose a VIP using a pre-created IPAddressPool
 	ExternalEndpoints []MetalLBConfig `json:"externalEndpoints,omitempty"`
+
+	// +kubebuilder:validation:Optional
+	// Override, provides the ability to override the generated manifest of several child resources.
+	Override PlacementAPIOverrideSpec `json:"override,omitempty"`
+}
+
+// PlacementAPIOverrideSpec to override the generated manifest of several child resources.
+type PlacementAPIOverrideSpec struct {
+	// +kubebuilder:validation:Optional
+	Route *route.OverrideSpec `json:"route,omitempty"`
 }
 
 // MetalLBConfig to configure the MetalLB loadbalancer service
