@@ -298,8 +298,8 @@ github.com/stretchr/testify v1.7.1/go.mod h1:6Fq8oRcR53rry900zMqJjRRixrwX3KX962/
 github.com/stretchr/testify v1.8.0/go.mod h1:yNjHg4UonilssWZ8iaSj1OCr/vHnekPRkoO+kdMU+MU=
 github.com/stretchr/testify v1.8.1 h1:w7B6lhMri9wdJUVmEZPGGhZzrYTPvgJArz7wNPgYKsk=
 github.com/stretchr/testify v1.8.1/go.mod h1:w2LPCIKwWwSfY2zedu0+kehJoqGctiVI29o6fzry7u4=
-github.com/stuggi/keystone-operator/api v0.0.0-20230717094317-0fffbca387c2 h1:LUKEpmKZhB5QU/1PuyNizChncNAUnUWhIfVFxt0Va10=
-github.com/stuggi/keystone-operator/api v0.0.0-20230717094317-0fffbca387c2/go.mod h1:XmRSuH2oUakDLU9UAziaHz2wDEoFdr4D3ca+4zzmbRA=
+github.com/stuggi/keystone-operator/api v0.0.0-20230720081932-01884147bdc6 h1:OtUpE1cIzXHx8zm11i6Ulu47mStbhygVkCSbk9w7SrI=
+github.com/stuggi/keystone-operator/api v0.0.0-20230720081932-01884147bdc6/go.mod h1:1vESCa/ny6aulzt5UKpdsJJObDfzpg6nn2iqItrCsnQ=
 github.com/stuggi/lib-common/modules/common v0.0.0-20230717094018-944cef0db635 h1:N04txFBWmJlo4ppxDY2dgoS+8tknjJxk8wrXRCAh1x4=
 github.com/stuggi/lib-common/modules/common v0.0.0-20230717094018-944cef0db635/go.mod h1:UTwtKN9s/re95Fh4bLcTWOSj8UK7Hhnmv4o0EzTvDqM=
 github.com/stuggi/lib-common/modules/openstack v0.0.0-20230717094018-944cef0db635 h1:lpQrlZskk0Lwi0T07uyZ/b1kDE2PAKVY74KB5GifhzM=

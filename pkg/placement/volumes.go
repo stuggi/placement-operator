@@ -17,14 +17,19 @@ package placement
 
 import (
 	corev1 "k8s.io/api/core/v1"
+	"k8s.io/utils/pointer"
 )
 
 // getVolumes - service volumes
-func getVolumes(name string) []corev1.Volume {
+func getVolumes(
+	name string,
+	caList []string,
+	crtSecret string,
+) []corev1.Volume {
 	var scriptsVolumeDefaultMode int32 = 0755
 	var config0640AccessMode int32 = 0640
 
-	return []corev1.Volume{
+	volumes := []corev1.Volume{
 		{
 			Name: "scripts",
 			VolumeSource: corev1.VolumeSource{
@@ -55,11 +60,64 @@ func getVolumes(name string) []corev1.Volume {
 		},
 	}
 
+	for _, secret := range caList {
+		volumes = append(volumes, corev1.Volume{
+			Name: secret + "-ca",
+			VolumeSource: corev1.VolumeSource{
+				Secret: &corev1.SecretVolumeSource{
+					SecretName: secret,
+					Items: []corev1.KeyToPath{
+						{
+							Key:  "ca.crt",
+							Path: secret + "-ca.crt",
+						},
+					},
+				},
+			},
+		})
+	}
+
+	if crtSecret != "" {
+		volumes = append(volumes, corev1.Volume{
+			Name: crtSecret + "-crt",
+			VolumeSource: corev1.VolumeSource{
+				Secret: &corev1.SecretVolumeSource{
+					SecretName: crtSecret,
+					Items: []corev1.KeyToPath{
+						{
+							Key:  "tls.crt",
+							Path: "service.crt",
+						},
+					},
+				},
+			},
+		})
+		volumes = append(volumes, corev1.Volume{
+			Name: crtSecret + "-key",
+			VolumeSource: corev1.VolumeSource{
+				Secret: &corev1.SecretVolumeSource{
+					SecretName: crtSecret,
+					Items: []corev1.KeyToPath{
+						{
+							Key:  "tls.key",
+							Path: "service.key",
+							Mode: pointer.Int32(0400),
+						},
+					},
+				},
+			},
+		})
+	}
+
+	return volumes
 }
 
 // getInitVolumeMounts - general init task VolumeMounts
-func getInitVolumeMounts() []corev1.VolumeMount {
-	return []corev1.VolumeMount{
+func getInitVolumeMounts(
+	caList []string,
+	crtSecret string,
+) []corev1.VolumeMount {
+	volumeMounts := []corev1.VolumeMount{
 		{
 			Name:      "scripts",
 			MountPath: "/usr/local/bin/container-scripts",
@@ -76,11 +134,40 @@ func getInitVolumeMounts() []corev1.VolumeMount {
 			ReadOnly:  false,
 		},
 	}
+
+	for _, secret := range caList {
+		volumeMounts = append(volumeMounts, corev1.VolumeMount{
+			MountPath: "/etc/pki/ca-trust/source/anchors/" + secret + "-ca.crt",
+			SubPath:   secret + "-ca.crt",
+			ReadOnly:  true,
+			Name:      secret + "-ca",
+		})
+	}
+
+	if crtSecret != "" {
+		volumeMounts = append(volumeMounts, corev1.VolumeMount{
+			MountPath: "/etc/pki/tls/certs/service.crt",
+			SubPath:   "service.crt",
+			ReadOnly:  true,
+			Name:      crtSecret + "-crt",
+		})
+		volumeMounts = append(volumeMounts, corev1.VolumeMount{
+			MountPath: "/etc/pki/tls/private/service.key",
+			SubPath:   "service.key",
+			ReadOnly:  true,
+			Name:      crtSecret + "-key",
+		})
+	}
+
+	return volumeMounts
 }
 
 // getVolumeMounts - general VolumeMounts
-func getVolumeMounts() []corev1.VolumeMount {
-	return []corev1.VolumeMount{
+func getVolumeMounts(
+	caList []string,
+	crtSecret string,
+) []corev1.VolumeMount {
+	volumeMounts := []corev1.VolumeMount{
 		{
 			Name:      "scripts",
 			MountPath: "/usr/local/bin/container-scripts",
@@ -92,4 +179,30 @@ func getVolumeMounts() []corev1.VolumeMount {
 			ReadOnly:  false,
 		},
 	}
+
+	for _, secret := range caList {
+		volumeMounts = append(volumeMounts, corev1.VolumeMount{
+			MountPath: "/etc/pki/ca-trust/source/anchors/" + secret + "-ca.crt",
+			SubPath:   secret + "-ca.crt",
+			ReadOnly:  true,
+			Name:      secret + "-ca",
+		})
+	}
+
+	if crtSecret != "" {
+		volumeMounts = append(volumeMounts, corev1.VolumeMount{
+			MountPath: "/etc/pki/tls/certs/service.crt",
+			SubPath:   "service.crt",
+			ReadOnly:  true,
+			Name:      crtSecret + "-crt",
+		})
+		volumeMounts = append(volumeMounts, corev1.VolumeMount{
+			MountPath: "/etc/pki/tls/private/service.key",
+			SubPath:   "service.key",
+			ReadOnly:  true,
+			Name:      crtSecret + "-key",
+		})
+	}
+
+	return volumeMounts
 }

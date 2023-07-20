@@ -25,7 +25,7 @@ import (
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/util/intstr"
+	//"k8s.io/apimachinery/pkg/util/intstr"
 )
 
 const (
@@ -39,6 +39,7 @@ func Deployment(
 	configHash string,
 	labels map[string]string,
 	annotations map[string]string,
+	caList []string,
 ) *appsv1.Deployment {
 	runAsUser := int64(0)
 
@@ -74,12 +75,25 @@ func Deployment(
 		//
 		// https://kubernetes.io/docs/tasks/configure-pod-container/configure-liveness-readiness-startup-probes/
 		//
-		livenessProbe.HTTPGet = &corev1.HTTPGetAction{
-			Port: intstr.IntOrString{Type: intstr.Int, IntVal: int32(PlacementPublicPort)},
+		livenessProbe.Exec = &corev1.ExecAction{
+			Command: []string{
+				"/bin/true",
+			},
 		}
-		readinessProbe.HTTPGet = &corev1.HTTPGetAction{
-			Port: intstr.IntOrString{Type: intstr.Int, IntVal: int32(PlacementPublicPort)},
+
+		readinessProbe.Exec = &corev1.ExecAction{
+			Command: []string{
+				"/bin/true",
+			},
 		}
+		/*
+			livenessProbe.HTTPGet = &corev1.HTTPGetAction{
+				Port: intstr.IntOrString{Type: intstr.Int, IntVal: int32(PlacementPublicPort)},
+			}
+			readinessProbe.HTTPGet = &corev1.HTTPGetAction{
+				Port: intstr.IntOrString{Type: intstr.Int, IntVal: int32(PlacementPublicPort)},
+			}
+		*/
 	}
 
 	envVars := map[string]env.Setter{}
@@ -116,7 +130,7 @@ func Deployment(
 								RunAsUser: &runAsUser,
 							},
 							Env:            env.MergeEnvs([]corev1.EnvVar{}, envVars),
-							VolumeMounts:   getVolumeMounts(),
+							VolumeMounts:   getInitVolumeMounts(caList, instance.Spec.TLS.CaSecretName),
 							Resources:      instance.Spec.Resources,
 							ReadinessProbe: readinessProbe,
 							LivenessProbe:  livenessProbe,
@@ -127,7 +141,7 @@ func Deployment(
 		},
 	}
 
-	deployment.Spec.Template.Spec.Volumes = getVolumes(instance.Name)
+	deployment.Spec.Template.Spec.Volumes = getVolumes(instance.Name, caList, instance.Spec.TLS.CaSecretName)
 	// If possible two pods of the same service should not
 	// run on the same worker node. If this is not possible
 	// the get still created on the same worker node.
@@ -150,7 +164,7 @@ func Deployment(
 		OSPSecret:            instance.Spec.Secret,
 		DBPasswordSelector:   instance.Spec.PasswordSelectors.Database,
 		UserPasswordSelector: instance.Spec.PasswordSelectors.Service,
-		VolumeMounts:         getInitVolumeMounts(),
+		VolumeMounts:         getInitVolumeMounts(caList, instance.Spec.TLS.CaSecretName),
 	}
 	deployment.Spec.Template.Spec.InitContainers = initContainer(initContainerDetails)
 

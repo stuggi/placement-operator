@@ -286,6 +286,7 @@ func (r *PlacementAPIReconciler) reconcileInit(
 	helper *helper.Helper,
 	serviceLabels map[string]string,
 	serviceAnnotations map[string]string,
+	caList []string,
 ) (ctrl.Result, error) {
 	r.Log.Info("Reconciling Service init")
 
@@ -376,7 +377,10 @@ func (r *PlacementAPIReconciler) reconcileInit(
 			Port:          placement.PlacementPublicPort,
 			RouteOverride: instance.Spec.Override.Route,
 		},
-		endpoint.EndpointInternal: {Port: placement.PlacementInternalPort},
+		endpoint.EndpointInternal: {
+			Port:     placement.PlacementInternalPort,
+			Protocol: endpoint.PtrProtocol(endpoint.ProtocolHTTPS),
+		},
 	}
 
 	for _, metallbcfg := range instance.Spec.ExternalEndpoints {
@@ -480,7 +484,7 @@ func (r *PlacementAPIReconciler) reconcileInit(
 	// run placement db sync
 	//
 	dbSyncHash := instance.Status.Hash[placementv1.DbSyncHash]
-	jobDef := placement.DbSyncJob(instance, serviceLabels, serviceAnnotations)
+	jobDef := placement.DbSyncJob(instance, serviceLabels, serviceAnnotations, caList)
 	if err != nil {
 		return ctrl.Result{}, err
 	}
@@ -596,6 +600,14 @@ func (r *PlacementAPIReconciler) reconcileNormal(ctx context.Context, instance *
 		return ctrl.Result{}, err
 	}
 
+	// create list of secrets provide ca.crt files and should be added
+	// to deployment pods.
+	// TODO add hash to configMapVars to restart on cert change
+	caList := []string{}
+	if instance.Spec.TLS != nil && instance.Spec.TLS.CaSecretName != "" {
+		caList = append(caList, instance.Spec.TLS.CaSecretName)
+	}
+
 	//
 	// create hash over all the different input resources to identify if any those changed
 	// and a restart/recreate is required.
@@ -649,7 +661,7 @@ func (r *PlacementAPIReconciler) reconcileNormal(ctx context.Context, instance *
 	}
 
 	// Handle service init
-	ctrlResult, err := r.reconcileInit(ctx, instance, helper, serviceLabels, serviceAnnotations)
+	ctrlResult, err := r.reconcileInit(ctx, instance, helper, serviceLabels, serviceAnnotations, caList)
 	if err != nil {
 		return ctrlResult, err
 	} else if (ctrlResult != ctrl.Result{}) {
@@ -677,7 +689,7 @@ func (r *PlacementAPIReconciler) reconcileNormal(ctx context.Context, instance *
 	//
 
 	// Define a new Deployment object
-	deplDef := placement.Deployment(instance, inputHash, serviceLabels, serviceAnnotations)
+	deplDef := placement.Deployment(instance, inputHash, serviceLabels, serviceAnnotations, caList)
 	if err != nil {
 		return ctrl.Result{}, err
 	}

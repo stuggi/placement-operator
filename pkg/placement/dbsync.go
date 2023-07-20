@@ -36,6 +36,7 @@ func DbSyncJob(
 	instance *placementv1.PlacementAPI,
 	labels map[string]string,
 	annotations map[string]string,
+	caList []string,
 ) *batchv1.Job {
 	runAsUser := int64(0)
 
@@ -77,7 +78,7 @@ func DbSyncJob(
 								RunAsUser: &runAsUser,
 							},
 							Env:          env.MergeEnvs([]corev1.EnvVar{}, envVars),
-							VolumeMounts: getVolumeMounts(),
+							VolumeMounts: getVolumeMounts(caList, instance.Spec.TLS.CaSecretName),
 						},
 					},
 				},
@@ -85,7 +86,7 @@ func DbSyncJob(
 		},
 	}
 
-	job.Spec.Template.Spec.Volumes = getVolumes(ServiceName)
+	job.Spec.Template.Spec.Volumes = getVolumes(ServiceName, caList, instance.Spec.TLS.CaSecretName)
 
 	initContainerDetails := APIDetails{
 		ContainerImage:       instance.Spec.ContainerImage,
@@ -95,7 +96,7 @@ func DbSyncJob(
 		OSPSecret:            instance.Spec.Secret,
 		DBPasswordSelector:   instance.Spec.PasswordSelectors.Database,
 		UserPasswordSelector: instance.Spec.PasswordSelectors.Service,
-		VolumeMounts:         getInitVolumeMounts(),
+		VolumeMounts:         getInitVolumeMounts(caList, instance.Spec.TLS.CaSecretName),
 	}
 	job.Spec.Template.Spec.InitContainers = initContainer(initContainerDetails)
 

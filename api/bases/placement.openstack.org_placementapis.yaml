@@ -459,6 +459,25 @@ spec:
                 description: ServiceUser - optional username used for this service
                   to register in keystone
                 type: string
+              tls:
+                description: TLS-related configuration for the service.
+                properties:
+                  caSecretName:
+                    description: Name of a Secret in the same Namespace as the service
+                      object, containing the Certificate Authority's public certificate
+                      for TLS. The Secret must store this as ca.crt.
+                    type: string
+                  disableNonTLSListeners:
+                    description: When set to true, the service disables non-TLS listeners.
+                      Only TLS-enabled clients will be able to connect.
+                    type: boolean
+                  secretName:
+                    description: Name of a Secret in the same Namespace as the service
+                      object, containing the server's private key & public certificate
+                      for TLS. The Secret must store these as tls.key and tls.crt,
+                      respectively.
+                    type: string
+                type: object
             required:
             - containerImage
             - databaseInstance
