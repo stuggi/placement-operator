@@ -178,27 +178,24 @@ var _ = Describe("PlacementAPI controller", func() {
 			DeferCleanup(th.DeleteKeystoneAPI, th.CreateKeystoneAPI(placementApiName.Namespace))
 
 			spec := GetDefaultPlacementAPISpec()
-			var serviceOverride []interface{}
-			serviceOverride = append(
-				serviceOverride, map[string]interface{}{
-					"endpoint": "internal",
-					"metadata": map[string]map[string]string{
-						"annotations": {
-							"dnsmasq.network.openstack.org/hostname": "placement-internal.openstack.svc",
-							"metallb.universe.tf/address-pool":       "osp-internalapi",
-							"metallb.universe.tf/allow-shared-ip":    "osp-internalapi",
-							"metallb.universe.tf/loadBalancerIPs":    "internal-lb-ip-1,internal-lb-ip-2",
-						},
-						"labels": {
-							"internal": "true",
-							"service":  "placement",
-						},
+			serviceOverride := map[string]interface{}{}
+			serviceOverride["internal"] = map[string]interface{}{
+				"metadata": map[string]map[string]string{
+					"annotations": {
+						"dnsmasq.network.openstack.org/hostname": "placement-internal.openstack.svc",
+						"metallb.universe.tf/address-pool":       "osp-internalapi",
+						"metallb.universe.tf/allow-shared-ip":    "osp-internalapi",
+						"metallb.universe.tf/loadBalancerIPs":    "internal-lb-ip-1,internal-lb-ip-2",
 					},
-					"spec": map[string]interface{}{
-						"type": "LoadBalancer",
+					"labels": {
+						"internal": "true",
+						"service":  "placement",
 					},
 				},
-			)
+				"spec": map[string]interface{}{
+					"type": "LoadBalancer",
+				},
+			}
 
 			spec["override"] = map[string]interface{}{
 				"service": serviceOverride,
@@ -269,13 +266,10 @@ var _ = Describe("PlacementAPI controller", func() {
 			DeferCleanup(th.DeleteKeystoneAPI, th.CreateKeystoneAPI(placementApiName.Namespace))
 
 			spec := GetDefaultPlacementAPISpec()
-			var serviceOverride []interface{}
-			serviceOverride = append(
-				serviceOverride, map[string]interface{}{
-					"endpoint":    "public",
-					"endpointURL": "http://placement-openstack.apps-crc.testing",
-				},
-			)
+			serviceOverride := map[string]interface{}{}
+			serviceOverride["public"] = map[string]interface{}{
+				"endpointURL": "http://placement-openstack.apps-crc.testing",
+			}
 
 			spec["override"] = map[string]interface{}{
 				"service": serviceOverride,
