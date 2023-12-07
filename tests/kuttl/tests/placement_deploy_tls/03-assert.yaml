@@ -1,0 +1,239 @@
+apiVersion: placement.openstack.org/v1beta1
+kind: PlacementAPI
+metadata:
+  finalizers:
+  - PlacementAPI
+  name: placement
+spec:
+  customServiceConfig: |
+    [DEFAULT]
+    debug = true
+  databaseInstance: openstack
+  databaseUser: placement
+  debug:
+    dbSync: false
+    service: false
+  passwordSelectors:
+    database: PlacementDatabasePassword
+    service: PlacementPassword
+  preserveJobs: false
+  replicas: 1
+  secret: osp-secret
+  serviceUser: placement
+  tls:
+    api:
+      internal:
+        secretName: cert-internal-svc
+      public:
+        secretName: cert-public-svc
+    caBundleSecretName: combined-ca-bundle
+status:
+  databaseHostname: openstack
+  readyCount: 1
+  conditions:
+  - message: Setup complete
+    reason: Ready
+    status: "True"
+    type: Ready
+  - message: DB create completed
+    reason: Ready
+    status: "True"
+    type: DBReady
+  - message: DBsync completed
+    reason: Ready
+    status: "True"
+    type: DBSyncReady
+  - message: Deployment completed
+    reason: Ready
+    status: "True"
+    type: DeploymentReady
+  - message: Exposing service completed
+    reason: Ready
+    status: "True"
+    type: ExposeServiceReady
+  - message: Input data complete
+    reason: Ready
+    status: "True"
+    type: InputReady
+  - message: Setup complete
+    reason: Ready
+    status: "True"
+    type: KeystoneEndpointReady
+  - message: Setup complete
+    reason: Ready
+    status: "True"
+    type: KeystoneServiceReady
+  - message: NetworkAttachments completed
+    reason: Ready
+    status: "True"
+    type: NetworkAttachmentsReady
+  - message: RoleBinding created
+    reason: Ready
+    status: "True"
+    type: RoleBindingReady
+  - message: Role created
+    reason: Ready
+    status: "True"
+    type: RoleReady
+  - message: ServiceAccount created
+    reason: Ready
+    status: "True"
+    type: ServiceAccountReady
+  - message: Service config create completed
+    reason: Ready
+    status: "True"
+    type: ServiceConfigReady
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: placement
+spec:
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        service: placement
+    spec:
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+          - podAffinityTerm:
+              labelSelector:
+                matchExpressions:
+                - key: service
+                  operator: In
+                  values:
+                  - placement
+              topologyKey: kubernetes.io/hostname
+            weight: 1
+      containers:
+      - args:
+        - --single-child
+        - --
+        - /usr/bin/tail
+        - -n+1
+        - -F
+        - /var/log/placement/placement-api.log
+        command:
+        - /usr/bin/dumb-init
+        imagePullPolicy: IfNotPresent
+        livenessProbe:
+          failureThreshold: 3
+          httpGet:
+            path: /
+            port: 8778
+            scheme: HTTPS
+          initialDelaySeconds: 3
+          periodSeconds: 3
+          successThreshold: 1
+          timeoutSeconds: 5
+        name: placement-log
+        readinessProbe:
+          failureThreshold: 3
+          httpGet:
+            path: /
+            port: 8778
+            scheme: HTTPS
+          initialDelaySeconds: 5
+          periodSeconds: 5
+          successThreshold: 1
+          timeoutSeconds: 5
+        resources: {}
+        securityContext:
+          runAsUser: 42482
+        terminationMessagePath: /dev/termination-log
+        terminationMessagePolicy: File
+        volumeMounts:
+        - mountPath: /usr/local/bin/container-scripts
+          name: scripts
+          readOnly: true
+        - mountPath: /var/lib/config-data/merged
+          name: config-data-merged
+        - mountPath: /var/lib/kolla/config_files/config.json
+          name: config-data-merged
+          readOnly: true
+          subPath: placement-api-config.json
+        - mountPath: /var/log/placement
+          name: logs
+        - mountPath: /etc/pki/ca-trust/extracted/pem/tls-ca-bundle.pem
+          name: combined-ca-bundle
+          readOnly: true
+          subPath: tls-ca-bundle.pem
+        - mountPath: /var/lib/config-data/tls/certs/internal.crt
+          name: internal-tls-certs
+          readOnly: true
+          subPath: tls.crt
+        - mountPath: /var/lib/config-data/tls/private/internal.key
+          name: internal-tls-certs
+          readOnly: true
+          subPath: tls.key
+        - mountPath: /var/lib/config-data/tls/certs/public.crt
+          name: public-tls-certs
+          readOnly: true
+          subPath: tls.crt
+        - mountPath: /var/lib/config-data/tls/private/public.key
+          name: public-tls-certs
+          readOnly: true
+          subPath: tls.key
+      - args:
+        - -c
+        - /usr/local/bin/kolla_start
+        command:
+        - /bin/bash
+        imagePullPolicy: IfNotPresent
+        livenessProbe:
+          failureThreshold: 3
+          httpGet:
+            path: /
+            port: 8778
+            scheme: HTTPS
+          initialDelaySeconds: 3
+          periodSeconds: 3
+          successThreshold: 1
+          timeoutSeconds: 5
+        name: placement-api
+        readinessProbe:
+          failureThreshold: 3
+          httpGet:
+            path: /
+            port: 8778
+            scheme: HTTPS
+          initialDelaySeconds: 5
+          periodSeconds: 5
+          successThreshold: 1
+          timeoutSeconds: 5
+        resources: {}
+      initContainers:
+      - args:
+        - -c
+        - /usr/local/bin/container-scripts/init.sh
+        command:
+        - /bin/bash
+        env:
+        - name: DatabasePassword
+          valueFrom:
+            secretKeyRef:
+              key: PlacementDatabasePassword
+              name: osp-secret
+        - name: PlacementPassword
+          valueFrom:
+            secretKeyRef:
+              key: PlacementPassword
+              name: osp-secret
+        - name: DatabaseHost
+          value: openstack
+        - name: DatabaseName
+          value: placement
+        - name: DatabaseUser
+          value: placement
+        imagePullPolicy: IfNotPresent
+        name: init
+        resources: {}
+      restartPolicy: Always
+      securityContext: {}
+      serviceAccount: placement-placement
+      serviceAccountName: placement-placement
+status:
+  availableReplicas: 1
+  replicas: 1
