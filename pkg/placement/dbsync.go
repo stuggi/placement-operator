@@ -46,7 +46,7 @@ func DbSyncJob(
 
 	// create Volume and VolumeMounts
 	volumes := getVolumes(instance.Name)
-	volumeMounts := getVolumeMounts()
+	volumeMounts := getVolumeMounts("dbsync")
 	initVolumeMounts := getInitVolumeMounts()
 
 	// add CA cert if defined
