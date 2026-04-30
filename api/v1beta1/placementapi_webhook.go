@@ -30,7 +30,6 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/util/validation/field"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
-	"sigs.k8s.io/controller-runtime/pkg/webhook"
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 )
 
@@ -51,7 +50,6 @@ func SetupPlacementAPIDefaults(defaults PlacementAPIDefaults) {
 	placementapilog.Info("PlacementAPI defaults initialized", "defaults", defaults)
 }
 
-var _ webhook.Defaulter = &PlacementAPI{}
 
 // Default implements webhook.Defaulter so a webhook will be registered for the type
 func (r *PlacementAPI) Default() {
@@ -75,7 +73,6 @@ func (spec *PlacementAPISpecCore) Default() {
 	// nothing here yet
 }
 
-var _ webhook.Validator = &PlacementAPI{}
 
 // ValidateCreate implements webhook.Validator so a webhook will be registered for the type
 func (r *PlacementAPI) ValidateCreate() (admission.Warnings, error) {
